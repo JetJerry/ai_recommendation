@@ -15,3 +15,4 @@ qdrant-data/
 dist/
 build/
 *.log
+
