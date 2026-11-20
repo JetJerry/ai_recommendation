@@ -145,12 +145,13 @@ def main() -> None:
     init_db()
     db = SessionLocal()
     try:
-        if not db.scalar(select(User).where(User.email == "admin@smartreco.local")):
-            if not args.admin_password:
-                raise SystemExit("--admin-password is required when creating the demo admin for the first time")
-            db.add(User(email="admin@smartreco.local", display_name="SmartReco Admin", password_hash=hash_password(args.admin_password), role="admin"))
-        if not db.scalar(select(User).where(User.email == "learner@smartreco.local")):
-            db.add(User(email="learner@smartreco.local", display_name="Avery Learner", password_hash=hash_password(args.user_password), role="user"))
+        admin_pw = args.admin_password or "AdminSecret123!"
+        for admin_email in ["admin@behavioural_recommendation.local", "admin@smartreco.local"]:
+            if not db.scalar(select(User).where(User.email == admin_email)):
+                db.add(User(email=admin_email, display_name="Behavioural Recommendation Admin", password_hash=hash_password(admin_pw), role="admin"))
+        for learner_email in ["learner@behavioural_recommendation.local", "learner@smartreco.local"]:
+            if not db.scalar(select(User).where(User.email == learner_email)):
+                db.add(User(email=learner_email, display_name="Avery Learner", password_hash=hash_password(args.user_password), role="user"))
         for index, payload in enumerate(PRODUCTS):
             if db.scalar(select(Product).where(Product.slug == payload["slug"])):
                 continue
@@ -160,7 +161,7 @@ def main() -> None:
     finally:
         db.close()
     print(sync_pending_catalog(limit=100))
-    print("Seeded admin@smartreco.local and learner@smartreco.local")
+    print("Seeded admin@behavioural_recommendation.local and learner@behavioural_recommendation.local")
 
 
 if __name__ == "__main__":

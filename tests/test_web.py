@@ -60,10 +60,11 @@ def test_anonymous_course_cta_leads_to_sign_in(client, products):
 
 def test_registration_creates_authenticated_session(client, db):
     client.get("/register")
-    response = client.post("/register", data={"email_local":"new.person", "display_name":"New User", "password":"LongEnough123!", "form_csrf": client.cookies.get("smartreco_auth_csrf")}, follow_redirects=False)
+    csrf_token = client.cookies.get("behavioural_recommendation_auth_csrf") or client.cookies.get("smartreco_auth_csrf")
+    response = client.post("/register", data={"email_local":"new.person", "display_name":"New User", "password":"LongEnough123!", "form_csrf": csrf_token}, follow_redirects=False)
     assert response.status_code == 303
-    assert client.cookies.get("smartreco_session")
-    registered = db.scalar(select(User).where(User.email == "new.person@smartreco.ai"))
+    assert client.cookies.get("behavioural_recommendation_session") or client.cookies.get("smartreco_session")
+    registered = db.scalar(select(User).where(User.email == "new.person@behavioural_recommendation.ai"))
     assert registered is not None
     assert registered.role == "user"
     assert registered.personalization_enabled is True
@@ -158,7 +159,7 @@ def test_admin_browser_auth_redirects_to_login_and_returns_to_requested_page(cli
         data={
             "email": admin.email,
             "password": "VeryStrong123!",
-            "form_csrf": client.cookies.get("smartreco_auth_csrf"),
+            "form_csrf": client.cookies.get("behavioural_recommendation_auth_csrf") or client.cookies.get("smartreco_auth_csrf"),
             "next": "/admin/observability?date=2026-08-05",
         },
         follow_redirects=False,
@@ -249,7 +250,7 @@ def test_profile_shows_account_details_with_only_email_editable(client, user):
     response = client.get("/profile")
     assert response.status_code == 200
     assert user.display_name in response.text
-    assert "Not collected by SmartReco" in response.text
+    assert "Not collected by Behavioural Recommendation" in response.text
     assert 'name="email_local"' in response.text
     assert 'name="digest_email"' in response.text
     assert 'name="current_password"' in response.text
@@ -445,7 +446,7 @@ def test_course_visit_activity_updates_profile_without_starting_second_recommend
         }]},
         headers={
             "X-CSRF-Token": session.csrf_token,
-            "X-SmartReco-Context": "course-visit",
+            "X-Behavioural-Recommendation-Context": "course-visit",
         },
     )
     profile = db.get(UserInterestProfile, user.id)

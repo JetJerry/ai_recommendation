@@ -11,8 +11,9 @@ htmlcov/
 *.db-*
 *.sqlite*
 .smartreco/
+.behavioural_recommendation/
 qdrant-data/
 dist/
 build/
 *.log
-
+docs/ 

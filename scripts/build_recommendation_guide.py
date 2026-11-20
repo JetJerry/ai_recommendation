@@ -12,7 +12,7 @@ from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 
 
-OUTPUT = Path("docs/SmartReco_Recommendation_System_Deep_Dive.docx")
+OUTPUT = Path("docs/Behavioural_Recommendation_System_Deep_Dive.docx")
 INK = "16182D"
 PURPLE = "5445D6"
 BLUE = "3F61E8"
@@ -261,12 +261,12 @@ def configure_document(doc):
     hp = header.paragraphs[0]
     hp.alignment = WD_ALIGN_PARAGRAPH.LEFT
     hp.paragraph_format.space_after = Pt(0)
-    set_font(hp.add_run("SMARTRECO  /  RECOMMENDATION SYSTEM"), size=8, bold=True, color=MID_GRAY)
+    set_font(hp.add_run("BEHAVIOURAL RECOMMENDATION  /  RECOMMENDATION SYSTEM"), size=8, bold=True, color=MID_GRAY)
 
     footer = section.footer
     fp = footer.paragraphs[0]
     fp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    set_font(fp.add_run("SmartReco technical guide  |  "), size=8, color=MID_GRAY)
+    set_font(fp.add_run("Behavioural Recommendation technical guide  |  "), size=8, color=MID_GRAY)
     fld_char1 = OxmlElement("w:fldChar")
     fld_char1.set(qn("w:fldCharType"), "begin")
     instr = OxmlElement("w:instrText")
@@ -290,7 +290,7 @@ def add_cover(doc):
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     title.paragraph_format.space_after = Pt(10)
     title.paragraph_format.keep_with_next = True
-    set_font(title.add_run("How SmartReco Recommends"), size=30, bold=True, color=INK)
+    set_font(title.add_run("How Behavioural Recommendation Recommends"), size=30, bold=True, color=INK)
 
     subtitle = doc.add_paragraph()
     subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -320,7 +320,7 @@ def build():
     add_cover(doc)
 
     add_heading(doc, "1. Executive summary", 1)
-    add_body(doc, "SmartReco has two distinct recommendation experiences that share one governed LangGraph workflow but use different triggers and ranking objectives.")
+    add_body(doc, "Behavioural Recommendation has two distinct recommendation experiences that share one governed LangGraph workflow but use different triggers and ranking objectives.")
     add_table(doc, ["Experience", "When it runs", "Primary evidence", "What the user sees"], [
         ["Overall - Recommended for you", "After new behavioral trigger points reach 8", "Recency-decayed user profile plus semantic catalog retrieval", "Stored narrative and up to three behavior-first courses on the home page"],
         ["Course detail - You may also be interested in", "Once per course-page visit or refresh", "Current course as the relevance anchor plus accumulated behavior", "A current-course learning story and up to three defensibly related next courses"],
@@ -556,7 +556,7 @@ def build():
     add_table(doc, ["Current condition", "Why it matters", "Recommended action"], limitation_rows, [2350, 3270, 3740], 8.0)
 
     add_heading(doc, "15. Presenter-ready explanation", 1)
-    add_callout(doc, "Thirty-second summary", "SmartReco does not ask an LLM to guess courses. It captures private user behavior, converts it into recency-decayed evidence, and waits until meaningful activity justifies an overall refresh. RAG retrieves real catalog candidates, deterministic scoring and exclusions choose the courses, MCP verifies them, and LangGraph controls generation, validation, fallback, and persistence. On a course page, the current course becomes the hard relevance anchor while the learner profile personalizes the next step. The LLM's job is to explain the verified path persuasively and safely.")
+    add_callout(doc, "Thirty-second summary", "Behavioural Recommendation does not ask an LLM to guess courses. It captures private user behavior, converts it into recency-decayed evidence, and waits until meaningful activity justifies an overall refresh. RAG retrieves real catalog candidates, deterministic scoring and exclusions choose the courses, MCP verifies them, and LangGraph controls generation, validation, fallback, and persistence. On a course page, the current course becomes the hard relevance anchor while the learner profile personalizes the next step. The LLM's job is to explain the verified path persuasively and safely.")
     add_heading(doc, "Key distinction", 2)
     add_table(doc, ["Question", "Answer"], [
         ["Who chooses the courses?", "RAG plus deterministic ranking and business rules."],

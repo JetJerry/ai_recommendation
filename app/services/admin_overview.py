@@ -41,7 +41,7 @@ def users_detail(db: Session) -> dict:
     active = sum(user.is_active for user in users)
     rows = [[f"{user.display_name} ({user.id[:8]})", user.email, user.role.title(), utc(user.created_at, "%Y-%m-%d %H:%M"),
              utc(stats.get(user.id, (0, None))[1], "%Y-%m-%d %H:%M"), stats.get(user.id, (0, None))[0], "Active" if user.is_active else "Inactive"] for user in users]
-    return result("users", "User acquisition and lifecycle", "Every account onboarded into SmartReco, with acquisition and engagement evidence.",
+    return result("users", "User acquisition and lifecycle", "Every account onboarded into Behavioural Recommendation, with acquisition and engagement evidence.",
         [card("Total accounts", len(users), "Learners and administrators"), card("Active accounts", active, f"{active / len(users) * 100 if users else 0:.1f}% of accounts"),
          card("New in 30 days", sum(user.created_at >= now - timedelta(days=30) for user in users), "UTC acquisition window"),
          card("Personalization on", sum(user.personalization_enabled for user in learners), f"of {len(learners)} learners")],

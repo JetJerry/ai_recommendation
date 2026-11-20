@@ -15,12 +15,12 @@ from app.services.recommendation import process_activity_and_maybe_recommend
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Replay a judge-visible behavioral journey")
-    parser.add_argument("--email", default="learner@smartreco.local")
+    parser.add_argument("--email", default="learner@behavioural_recommendation.local")
     args = parser.parse_args()
     init_db()
     db = SessionLocal()
     try:
-        user = db.scalar(select(User).where(User.email == args.email))
+        user = db.scalar(select(User).where(User.email == args.email)) or db.scalar(select(User).where(User.email == "learner@smartreco.local"))
         if not user:
             raise SystemExit("Seed the demo first")
         langgraph = db.scalar(select(Product).where(Product.slug == "agentic-workflows-langgraph"))

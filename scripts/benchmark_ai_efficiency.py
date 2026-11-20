@@ -9,14 +9,14 @@ from uuid import uuid4
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run SmartReco's isolated 100-event AI-efficiency benchmark.")
+    parser = argparse.ArgumentParser(description="Run Behavioural Recommendation's isolated 100-event AI-efficiency benchmark.")
     parser.add_argument("--live-mesh", action="store_true", help="Opt in to real Mesh recommendation-copy calls")
     parser.add_argument("--json", action="store_true", help="Print machine-readable output")
     args = parser.parse_args()
 
     workspace = Path(__file__).resolve().parents[1]
     sys.path.insert(0, str(workspace))
-    temporary = tempfile.TemporaryDirectory(prefix="smartreco-efficiency-", ignore_cleanup_errors=True)
+    temporary = tempfile.TemporaryDirectory(prefix="behavioural-recommendation-efficiency-", ignore_cleanup_errors=True)
     temp_root = Path(temporary.name)
     os.environ["DATABASE_URL"] = f"sqlite:///{(temp_root / 'benchmark.db').as_posix()}"
     os.environ["QDRANT_PATH"] = str(temp_root / "qdrant")
@@ -218,7 +218,7 @@ def main() -> None:
     if args.json:
         print(json.dumps(report, indent=2))
     else:
-        print("SmartReco isolated AI-efficiency benchmark")
+        print("Behavioural Recommendation isolated AI-efficiency benchmark")
         for key, value in report.items():
             print(f"{key.replace('_', ' ').title()}: {value}")
 

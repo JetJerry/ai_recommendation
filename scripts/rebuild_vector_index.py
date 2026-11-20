@@ -10,7 +10,7 @@ from app.services.vector_store import get_vector_store, rebuild_vector_index
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Safely rebuild and verify SmartReco's Qdrant index from active SQL products."
+        description="Safely rebuild and verify Behavioural Recommendation's Qdrant index from active SQL products."
     )
     parser.add_argument("--verify-only", action="store_true", help="Inspect compatibility without modifying Qdrant")
     parser.add_argument(
@@ -32,7 +32,7 @@ def main() -> None:
     if args.json:
         print(json.dumps(report, indent=2, default=str))
     else:
-        print(f"SmartReco vector index: {report.get('status', 'UNAVAILABLE')}")
+        print(f"Behavioural Recommendation vector index: {report.get('status', 'UNAVAILABLE')}")
         print(report.get("message", "No verification message was returned."))
         print(
             f"SQL active products: {report.get('expected_sql_count', 'not checked')} | "

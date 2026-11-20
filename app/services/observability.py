@@ -13,7 +13,7 @@ from app.models import ServiceInvocation, utcnow
 
 
 _SENSITIVE_KEY = re.compile(r"(password|secret|token|authorization|cookie|csrf|api[_-]?key)", re.I)
-_SECRET_VALUE = re.compile(r"(?:rsk_|lsv2_|Bearer\s+)[A-Za-z0-9._-]+", re.I)
+_SECRET_VALUE = re.compile(r"(?:rsk_|gsk_|lsv2_|Bearer\s+)[A-Za-z0-9._-]+", re.I)
 
 
 def sanitize_telemetry(value):
@@ -34,6 +34,11 @@ def estimate_cost(model: str | None, input_tokens: int = 0, output_tokens: int =
     if model in {
         "tencent/hy3",
         "minimax/m2-her",
+        "qwen/qwen3.8-27b",
+        "openai/gpt-oss-20b",
+        "openai/gpt-oss-120b",
+        "canopylabs/orpheus-v1-english",
+        "BAAI/bge-small-en-v1.5",
         "deterministic-local-fallback",
         "deterministic-provider-fallback",
         "deterministic-validation-fallback",

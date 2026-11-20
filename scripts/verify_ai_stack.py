@@ -16,7 +16,7 @@ from app.services.recommendation import execute_recommendation_run
 def main() -> None:
     db = SessionLocal()
     try:
-        user = db.scalar(select(User).where(User.email == "learner@smartreco.local"))
+        user = db.scalar(select(User).where(User.email == "learner@behavioural_recommendation.local")) or db.scalar(select(User).where(User.email == "learner@smartreco.local"))
         if not user:
             raise SystemExit("Demo learner is not seeded")
         profile = db.get(UserInterestProfile, user.id)

@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EXCLUDED_DIRS = {".git", ".smartreco", ".venv", "__pycache__", ".pytest_cache", "htmlcov", "build", "dist"}
+EXCLUDED_DIRS = {".git", ".smartreco", ".behavioural_recommendation", ".venv", "__pycache__", ".pytest_cache", "htmlcov", "build", "dist"}
 SECRET_PATTERNS = [
     re.compile(r"rsk_[A-Za-z0-9]{20,}"),
     re.compile(r"lsv2_[A-Za-z0-9_]{20,}"),
@@ -34,7 +34,7 @@ def audit_submission_hygiene() -> dict:
     forbidden_tracked = sorted(
         path for path in tracked
         if path == ".env"
-        or path.startswith(".smartreco/")
+        or path.startswith((".smartreco/", ".behavioural_recommendation/"))
         or path.endswith((".db", ".sqlite", ".sqlite3", ".pyc", ".log"))
     )
     secret_files: list[str] = []

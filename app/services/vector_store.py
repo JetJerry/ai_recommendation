@@ -15,7 +15,8 @@ from app.services.observability import begin_invocation, finish_invocation
 SEMANTIC = "SEMANTIC"
 DEGRADED = "DEGRADED"
 UNAVAILABLE = "UNAVAILABLE"
-INDEX_SCHEMA_VERSION = "smartreco-product-v1"
+INDEX_SCHEMA_VERSION = "behavioural_recommendation-product-v1"
+LEGACY_INDEX_SCHEMA_VERSION = "smartreco-product-v1"
 
 
 @dataclass(frozen=True)
@@ -62,6 +63,12 @@ class VectorIndexVerification:
 
 def expected_embedding_descriptor() -> EmbeddingDescriptor:
     settings = get_settings()
+    if settings.embedding_provider == "fastembed":
+        return EmbeddingDescriptor(
+            provider="fastembed",
+            model=settings.open_embedding_model,
+            dimension=EMBEDDING_DIMENSION,
+        )
     return EmbeddingDescriptor(
         provider="mesh_api" if mesh_gateway.embeddings_enabled else "deterministic-local",
         model=settings.mesh_embedding_model if mesh_gateway.embeddings_enabled else "deterministic-hash-v1",
@@ -96,17 +103,20 @@ def evaluate_vector_snapshot(
             or state.embedding_provider != descriptor.provider
             or state.embedding_model != descriptor.model
             or state.vector_dimension != descriptor.dimension
-            or state.index_schema_version != descriptor.schema_version
+            or state.index_schema_version not in {descriptor.schema_version, LEGACY_INDEX_SCHEMA_VERSION}
         ):
             incompatible.add(product_id)
         payload = point_payloads.get(product_id) or {}
-        if any(payload.get(key) != value for key, value in expected_metadata.items()):
+        if (
+            any(payload.get(key) != value for key, value in expected_metadata.items() if key != "index_schema_version")
+            or payload.get("index_schema_version") not in {descriptor.schema_version, LEGACY_INDEX_SCHEMA_VERSION}
+        ):
             incompatible.add(product_id)
         if payload.get("version") != product.version or payload.get("content_checksum") != product.content_checksum:
             incompatible.add(product_id)
     incompatible_ids = sorted(incompatible)
     compatible = not missing and not stale and not incompatible_ids
-    expected_status = SEMANTIC if descriptor.provider == "mesh_api" else DEGRADED
+    expected_status = SEMANTIC if descriptor.provider in {"mesh_api", "fastembed"} else DEGRADED
     return VectorIndexVerification(
         status=expected_status if compatible else UNAVAILABLE,
         compatible=compatible,
@@ -270,14 +280,14 @@ def rebuild_vector_index(*, require_semantic: bool = True, batch_size: int = 32)
     deleted or rewritten by this operation.
     """
     descriptor = expected_embedding_descriptor()
-    if require_semantic and descriptor.provider != "mesh_api":
+    if require_semantic and descriptor.provider not in {"mesh_api", "fastembed"}:
         return {
             "status": UNAVAILABLE,
             "rebuild_performed": False,
             "semantic_mode": False,
             "embedding_calls": 0,
-            "error_code": "MESH_EMBEDDINGS_UNAVAILABLE",
-            "message": "Mesh embeddings are not enabled; no Qdrant data was changed.",
+            "error_code": "SEMANTIC_EMBEDDINGS_UNAVAILABLE",
+            "message": "Semantic embeddings are not enabled; no Qdrant data was changed.",
             "descriptor": descriptor.payload(),
         }
     db = SessionLocal()

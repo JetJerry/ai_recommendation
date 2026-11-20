@@ -1,2 +1,2 @@
-"""SmartReco application package."""
+"""Behavioural Recommendation application package."""
 

@@ -10,7 +10,7 @@ from app.services.observability import observed_call
 from app.config import get_settings
 
 
-mcp = FastMCP("SmartReco Read Tools")
+mcp = FastMCP("Behavioural Recommendation Read Tools")
 
 
 def _require_trusted_local_boundary() -> None:

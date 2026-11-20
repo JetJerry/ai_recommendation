@@ -8,31 +8,36 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    app_name: str = "SmartReco"
+    app_name: str = "Behavioural Recommendation"
     app_env: str = "development"
     app_secret: str = "development-only-change-me-please-32-chars"
-    database_url: str = "sqlite:///./.smartreco/smartreco.db"
-    qdrant_path: str = "./.smartreco/qdrant"
+    database_url: str = "sqlite:///./.behavioural_recommendation/behavioural_recommendation.db"
+    qdrant_path: str = "./.behavioural_recommendation/qdrant"
     qdrant_url: str | None = None
     qdrant_api_key: str | None = None
-    qdrant_collection: str = "smartreco-products"
+    qdrant_collection: str = "behavioural_recommendation-products"
 
     mesh_api_key: str | None = None
     mesh_base_url: str = "https://api.meshapi.ai/v1"
-    mesh_free_model: str = "minimax/m2-her"
+    mesh_free_model: str = "openai/gpt-4o-mini"
     mesh_paid_model: str = "openai/gpt-4o-mini"
     mesh_premium_model: str = "openai/gpt-5.4-mini"
     mesh_embedding_model: str = "openai/text-embedding-3-small"
     mesh_embeddings_enabled: bool = False
     mesh_model_mode: str = "free"
-    mesh_failover_models: str = "minimax/m2-her,tencent/hy3,openai/gpt-4o-mini"
+    mesh_failover_models: str = "openai/gpt-4o-mini,qwen/qwen3.8-27b,minimax/minimax-m2"
     mesh_timeout_seconds: int = 90
     mesh_contextual_timeout_seconds: int = 25
     mesh_sdk_max_retries: int = 1
 
+    # Groq & Open Embedding settings
+    groq_api_key: str | None = None
+    embedding_provider: str = "fastembed"
+    open_embedding_model: str = "BAAI/bge-small-en-v1.5"
+
     langsmith_tracing: bool = False
     langsmith_api_key: str | None = None
-    langsmith_project: str = "smartreco"
+    langsmith_project: str = "behavioural_recommendation"
     langsmith_reconciliation_seconds: int = 30
     langsmith_export_delay_seconds: int = 120
     langsmith_reconciliation_days: int = 7
@@ -45,18 +50,18 @@ class Settings(BaseSettings):
     session_idle_minutes: int = 30
     login_max_attempts: int = 5
     login_window_minutes: int = 15
-    registration_email_domain: str = "smartreco.ai"
+    registration_email_domain: str = "behavioural_recommendation.ai"
     allowed_hosts: str = "127.0.0.1,localhost,testserver"
     scheduler_enabled: bool = True
 
-    demo_admin_email: str = "admin@smartreco.local"
+    demo_admin_email: str = "admin@behavioural_recommendation.local"
     demo_admin_password: str | None = None
 
     smtp_host: str | None = None
     smtp_port: int = 587
     smtp_username: str | None = None
     smtp_password: str | None = None
-    smtp_from: str = "SmartReco <recommendations@smartreco.local>"
+    smtp_from: str = "Behavioural Recommendation <recommendations@behavioural_recommendation.local>"
     delivery_mode: str = "sandbox"
     delivery_max_attempts: int = 4
     delivery_retry_base_seconds: int = 60
@@ -71,6 +76,15 @@ class Settings(BaseSettings):
     mcp_trusted_local_only: bool = True
 
     cookie_secure: bool = Field(default=False)
+
+    @property
+    def effective_llm_api_key(self) -> str | None:
+        return self.groq_api_key or self.mesh_api_key
+
+    @property
+    def is_groq(self) -> bool:
+        key = self.effective_llm_api_key or ""
+        return bool(self.groq_api_key or key.startswith("gsk_") or "groq.com" in self.mesh_base_url)
 
     @property
     def allowed_host_list(self) -> list[str]:
@@ -109,6 +123,7 @@ class Settings(BaseSettings):
         return ordered[:3]
 
     def ensure_runtime_dirs(self) -> None:
+        Path(".behavioural_recommendation").mkdir(parents=True, exist_ok=True)
         Path(".smartreco").mkdir(parents=True, exist_ok=True)
         if not self.qdrant_url:
             Path(self.qdrant_path).mkdir(parents=True, exist_ok=True)

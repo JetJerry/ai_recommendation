@@ -13,7 +13,7 @@ from app.models import ServiceInvocation, TraceReconciliationRun, ensure_utc, ut
 from app.services.observability import sanitize_telemetry
 
 
-PROVIDER_SPAN_NAME = "smartreco-mesh-provider-attempt"
+PROVIDER_SPAN_NAME = "behavioural-recommendation-mesh-provider-attempt"
 PROVIDER_TELEMETRY_SCHEMA = "provider-attempt-v1"
 BACKFILL_SCHEMA = "provider-attempt-backfill-v1"
 
@@ -88,7 +88,7 @@ def _backfill_missing_provider_span(client: Client, row: ServiceInvocation, sett
         outputs={"historical_result": "Local operational evidence backfilled after connectivity recovery"},
         error=error,
         extra={"metadata": backfill_metadata},
-        tags=["smartreco", "mesh", "provider-attempt", "historical-backfill"],
+        tags=["behavioural_recommendation", "mesh", "provider-attempt", "historical-backfill"],
         prompt_tokens=int(row.input_tokens or 0),
         completion_tokens=int(row.output_tokens or 0),
         total_tokens=int((row.input_tokens or 0) + (row.output_tokens or 0)),
@@ -108,17 +108,23 @@ def _backfill_missing_provider_span(client: Client, row: ServiceInvocation, sett
     return True
 
 
+import warnings
+
+
 def _list_provider_runs(client: Client, settings, started_at):
-    return list(client.list_runs(
-        project_name=settings.langsmith_project,
-        run_type="llm",
-        start_time=started_at - timedelta(days=max(1, settings.langsmith_reconciliation_days)),
-        filter=f'eq(name, "{PROVIDER_SPAN_NAME}")',
-        select=[
-            "id", "trace_id", "name", "run_type", "start_time", "end_time", "error", "extra",
-            "prompt_tokens", "completion_tokens", "total_tokens",
-        ],
-    ))
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message=".*list_runs.*")
+        warnings.filterwarnings("ignore", message=".*get_run_url.*")
+        return list(client.list_runs(
+            project_name=settings.langsmith_project,
+            run_type="llm",
+            start_time=started_at - timedelta(days=max(1, settings.langsmith_reconciliation_days)),
+            filter=f'eq(name, "{PROVIDER_SPAN_NAME}")',
+            select=[
+                "id", "trace_id", "name", "run_type", "start_time", "end_time", "error", "extra",
+                "prompt_tokens", "completion_tokens", "total_tokens",
+            ],
+        ))
 
 
 def reconcile_langsmith_traces() -> dict:
@@ -218,7 +224,9 @@ def reconcile_langsmith_traces() -> dict:
                     "langsmith_latency_ms": langsmith_latency_ms,
                 }
                 try:
-                    row.langsmith_run_url = client.get_run_url(run=remote, project_name=settings.langsmith_project)
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings("ignore", message=".*get_run_url.*")
+                        row.langsmith_run_url = client.get_run_url(run=remote, project_name=settings.langsmith_project)
                 except Exception:
                     # URL construction is presentation-only and must not affect reconciliation.
                     pass

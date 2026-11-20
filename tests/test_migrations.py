@@ -34,9 +34,9 @@ def _check_schema(environment: dict[str, str]) -> subprocess.CompletedProcess[st
 
 
 def test_fresh_alembic_chain_reaches_head_and_is_repeatable(tmp_path: Path) -> None:
-    database_path = tmp_path / "fresh-smartreco.db"
+    database_path = tmp_path / "fresh-behavioural_recommendation.db"
     runtime_qdrant_path = tmp_path / "qdrant"
-    production_database = (PROJECT_ROOT / ".smartreco" / "smartreco.db").resolve()
+    production_database = (PROJECT_ROOT / ".behavioural_recommendation" / "behavioural_recommendation.db").resolve()
     assert database_path.resolve() != production_database
 
     environment = os.environ.copy()

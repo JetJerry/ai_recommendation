@@ -9,8 +9,9 @@ from app.models import User, UserSession, utcnow
 from app.security import token_hash
 
 
-COOKIE_NAME = "smartreco_session"
-_AUTH_CACHE_ATTRIBUTE = "_smartreco_auth_resolution"
+COOKIE_NAME = "behavioural_recommendation_session"
+LEGACY_COOKIE_NAME = "smartreco_session"
+_AUTH_CACHE_ATTRIBUTE = "_behavioural_recommendation_auth_resolution"
 
 
 def _with_timezone(value: datetime, now: datetime) -> datetime:
@@ -25,7 +26,7 @@ def _cache_resolution(request: Request, resolution: tuple[User | None, UserSessi
 def resolve_session(request: Request, db: Session) -> tuple[User | None, UserSession | None]:
     if hasattr(request.state, _AUTH_CACHE_ATTRIBUTE):
         return getattr(request.state, _AUTH_CACHE_ATTRIBUTE)
-    raw_token = request.cookies.get(COOKIE_NAME)
+    raw_token = request.cookies.get(COOKIE_NAME) or request.cookies.get(LEGACY_COOKIE_NAME)
     if not raw_token:
         return _cache_resolution(request, (None, None))
     session = db.scalar(select(UserSession).where(UserSession.token_hash == token_hash(raw_token)))

@@ -1,9 +1,11 @@
 import os
 
-os.environ["DATABASE_URL"] = "sqlite:///./.smartreco/pytest.db"
-os.environ["QDRANT_PATH"] = "./.smartreco/pytest-qdrant"
+os.environ["DATABASE_URL"] = "sqlite:///./.behavioural_recommendation/pytest.db"
+os.environ["QDRANT_PATH"] = "./.behavioural_recommendation/pytest-qdrant"
 os.environ["SCHEDULER_ENABLED"] = "false"
 os.environ["MESH_API_KEY"] = ""
+os.environ["GROQ_API_KEY"] = ""
+os.environ["EMBEDDING_PROVIDER"] = "deterministic"
 os.environ["MESH_EMBEDDINGS_ENABLED"] = "false"
 os.environ["LANGSMITH_TRACING"] = "false"
 os.environ["LANGSMITH_API_KEY"] = ""
@@ -16,6 +18,8 @@ os.environ["ALLOWED_HOSTS"] = "127.0.0.1,localhost,testserver"
 import pytest
 from fastapi.testclient import TestClient
 
+from app.config import get_settings
+get_settings.cache_clear()
 from app.db import Base, SessionLocal, engine
 from app.main import app
 from app.models import Product, User
@@ -87,4 +91,12 @@ def products(db):
 
 def login(client, email="learner@example.com", password="VeryStrong123!"):
     client.get("/login")
-    return client.post("/login", data={"email": email, "password": password, "form_csrf": client.cookies.get("smartreco_auth_csrf")}, follow_redirects=False)
+    return client.post(
+        "/login",
+        data={
+            "email": email,
+            "password": password,
+            "form_csrf": client.cookies.get("behavioural_recommendation_auth_csrf") or client.cookies.get("smartreco_auth_csrf"),
+        },
+        follow_redirects=False,
+    )

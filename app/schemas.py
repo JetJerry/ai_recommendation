@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timezone
 from typing import Literal
 
@@ -24,13 +25,27 @@ ALLOWED_EVENT_TYPES = {
 
 
 class RegisterInput(BaseModel):
-    email: EmailStr
+    email: str = Field(min_length=3, max_length=255)
     display_name: str = Field(min_length=2, max_length=120)
     password: str = Field(min_length=10, max_length=200)
 
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        if not re.match(r"^[^@\s]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+$", v):
+            raise ValueError("Invalid email address")
+        return v.lower()
+
 
 class DigestEmailInput(BaseModel):
-    email: EmailStr
+    email: str = Field(min_length=3, max_length=255)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        if not re.match(r"^[^@\s]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+$", v):
+            raise ValueError("Invalid email address")
+        return v.lower()
 
 
 class ProductInput(BaseModel):

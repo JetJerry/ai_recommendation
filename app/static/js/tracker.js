@@ -5,8 +5,9 @@
   if (!userNamespace) return;
   localStorage.removeItem('smartreco.unsent-events.v1');
   localStorage.removeItem('smartreco.session-id');
-  const storageKey = `smartreco.unsent-events.v2.${userNamespace}`;
-  const sessionKey = `smartreco.session-id.v2.${userNamespace}`;
+  localStorage.removeItem('behavioural_recommendation.unsent-events.v1');
+  const storageKey = `behavioural_recommendation.unsent-events.v2.${userNamespace}`;
+  const sessionKey = `behavioural_recommendation.session-id.v2.${userNamespace}`;
   const sessionId = localStorage.getItem(sessionKey) || crypto.randomUUID();
   localStorage.setItem(sessionKey, sessionId);
   let queue = [];
@@ -32,13 +33,17 @@
     localStorage.setItem(storageKey, JSON.stringify(queue));
     try {
       const requestHeaders = {'Content-Type': 'application/json', 'X-CSRF-Token': csrf};
-      if (document.querySelector('[data-product-page]')) requestHeaders['X-SmartReco-Context'] = 'course-visit';
+      if (document.querySelector('[data-product-page]')) {
+        requestHeaders['X-Behavioural-Recommendation-Context'] = 'course-visit';
+        requestHeaders['X-SmartReco-Context'] = 'course-visit';
+      }
       const response = await fetch('/api/events/batch', {
         method: 'POST', headers: requestHeaders,
         body: JSON.stringify({events: batch}), keepalive: true
       });
       if (!response.ok) throw new Error('event batch rejected');
       const result = await response.json();
+      window.dispatchEvent(new CustomEvent('behavioural_recommendation:events-synced', {detail: result}));
       window.dispatchEvent(new CustomEvent('smartreco:events-synced', {detail: result}));
       return result;
     } catch {
@@ -182,7 +187,8 @@
   };
   const currentCartCount = () => Number(document.querySelector('[data-cart-count]')?.textContent || 0);
 
-  window.SmartReco = {track: enqueue, flush};
+  window.BehaviouralRecommendation = {track: enqueue, flush};
+  window.SmartReco = window.BehaviouralRecommendation;
   document.querySelector('form[action="/logout"]')?.addEventListener('submit', () => {
     localStorage.removeItem(storageKey);
     localStorage.removeItem(sessionKey);
@@ -266,6 +272,9 @@
   if (recommendation) enqueue('recommendation_impression', {recommendationId: recommendation.dataset.recommendationId});
   setInterval(flush, 1500);
   addEventListener('online', flush);
+  addEventListener('behavioural_recommendation:events-synced', () => {
+    refreshPersonalizationSoon();
+  });
   addEventListener('smartreco:events-synced', () => {
     refreshPersonalizationSoon();
   });

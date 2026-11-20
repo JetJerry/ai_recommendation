@@ -533,7 +533,7 @@ def load_context_node(state: RecommendationState) -> RecommendationState:
         db.close()
 
 
-@traceable(name="smartreco-rag-retrieval", run_type="retriever", process_inputs=_trace_state_inputs, process_outputs=_trace_state_outputs)
+@traceable(name="behavioural-recommendation-rag-retrieval", run_type="retriever", process_inputs=_trace_state_inputs, process_outputs=_trace_state_outputs)
 def retrieve_node(state: RecommendationState) -> RecommendationState:
     contextual = bool(state.get("context_product_id"))
     operation = "contextual_catalog_retrieval" if contextual else "catalog_semantic_retrieval"
@@ -609,7 +609,7 @@ def insufficient_evidence_node(state: RecommendationState) -> RecommendationStat
     return {}
 
 
-@traceable(name="smartreco-mcp-catalog-verification", run_type="tool", process_inputs=_trace_state_inputs, process_outputs=_trace_state_outputs)
+@traceable(name="behavioural-recommendation-mcp-catalog-verification", run_type="tool", process_inputs=_trace_state_inputs, process_outputs=_trace_state_outputs)
 def verify_with_mcp_node(state: RecommendationState) -> RecommendationState:
     _update_run(state["run_id"], "verify_with_mcp")
     expected_ids = [item["id"] for item in state.get("selected", [])]
@@ -669,7 +669,7 @@ def _redact_provider_outputs(result: MeshResult | None) -> dict:
 
 
 @traceable(
-    name="smartreco-mesh-provider-attempt",
+    name="behavioural-recommendation-mesh-provider-attempt",
     run_type="llm",
     process_inputs=_redact_provider_inputs,
     process_outputs=_redact_provider_outputs,
@@ -719,7 +719,7 @@ def execute_traced_mesh_attempt(
     return result
 
 
-@traceable(name="smartreco-generate-copy", run_type="chain", process_inputs=_trace_state_inputs, process_outputs=_trace_state_outputs)
+@traceable(name="behavioural-recommendation-generate-copy", run_type="chain", process_inputs=_trace_state_inputs, process_outputs=_trace_state_outputs)
 def generate_node(state: RecommendationState) -> RecommendationState:
     if not state.get("selected"):
         raise ValueError("No eligible catalog products")
@@ -763,7 +763,7 @@ def generate_node(state: RecommendationState) -> RecommendationState:
                 attempt_number=attempt_number,
                 workload="recommendation",
                 langsmith_extra={
-                    "tags": ["smartreco", "mesh", "provider-attempt"],
+                    "tags": ["behavioural_recommendation", "mesh", "provider-attempt"],
                     "metadata": {
                         "telemetry_schema": "provider-attempt-v1",
                         "local_invocation_id": handle.id,
@@ -996,7 +996,7 @@ graph_builder.add_edge("persist", END)
 recommendation_graph = graph_builder.compile(checkpointer=InMemorySaver())
 
 
-@traceable(name="smartreco-recommendation-run", run_type="chain", process_inputs=_trace_state_inputs, process_outputs=_trace_state_outputs)
+@traceable(name="behavioural-recommendation-recommendation-run", run_type="chain", process_inputs=_trace_state_inputs, process_outputs=_trace_state_outputs)
 def execute_recommendation_run(run_id: str) -> None:
     db = SessionLocal()
     try:
@@ -1222,7 +1222,7 @@ def process_activity_and_maybe_recommend(user_id: str, *, allow_recommendation: 
     execute_recommendation_run(
         run_id,
         langsmith_extra={
-            "tags": ["smartreco", "recommendation", "production"],
+            "tags": ["behavioural_recommendation", "recommendation", "production"],
             "metadata": {"user_ref": _trace_user_id(user_id), "recommendation_run_id": run_id, "thread_id": run_id, "model": settings.active_chat_model},
         },
     )

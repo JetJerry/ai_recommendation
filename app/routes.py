@@ -4,7 +4,7 @@ import re
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Form, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import delete, func, or_, select
@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db import get_db
-from app.dependencies import COOKIE_NAME, require_admin, require_user, resolve_session, validate_csrf
+from app.dependencies import COOKIE_NAME, LEGACY_COOKIE_NAME, require_admin, require_user, resolve_session, validate_csrf
 from app.models import (
     ActivityEvent,
     AuthAttempt,
@@ -65,8 +65,35 @@ from app.services.vector_store import get_vector_store, sync_pending_catalog
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
-AUTH_CSRF_COOKIE = "smartreco_auth_csrf"
+AUTH_CSRF_COOKIE = "behavioural_recommendation_auth_csrf"
+LEGACY_AUTH_CSRF_COOKIE = "smartreco_auth_csrf"
 REPORTING_TIMEZONE = timezone.utc
+
+
+def _set_auth_csrf_cookies(response: Response, token: str, max_age: int = 900) -> None:
+    secure = get_settings().cookie_secure
+    response.set_cookie(AUTH_CSRF_COOKIE, token, httponly=True, samesite="strict", secure=secure, max_age=max_age)
+    response.set_cookie(LEGACY_AUTH_CSRF_COOKIE, token, httponly=True, samesite="strict", secure=secure, max_age=max_age)
+
+
+def _delete_auth_csrf_cookies(response: Response) -> None:
+    response.delete_cookie(AUTH_CSRF_COOKIE)
+    response.delete_cookie(LEGACY_AUTH_CSRF_COOKIE)
+
+
+def _set_session_cookies(response: Response, raw_token: str, max_age: int) -> None:
+    secure = get_settings().cookie_secure
+    response.set_cookie(COOKIE_NAME, raw_token, httponly=True, samesite="lax", secure=secure, max_age=max_age)
+    response.set_cookie(LEGACY_COOKIE_NAME, raw_token, httponly=True, samesite="lax", secure=secure, max_age=max_age)
+
+
+def _delete_session_cookies(response: Response) -> None:
+    response.delete_cookie(COOKIE_NAME)
+    response.delete_cookie(LEGACY_COOKIE_NAME)
+
+
+def _get_auth_csrf_cookie(request: Request) -> str:
+    return request.cookies.get(AUTH_CSRF_COOKIE) or request.cookies.get(LEGACY_AUTH_CSRF_COOKIE, "")
 
 
 def as_reporting_time(value: datetime | None) -> datetime | None:
@@ -429,7 +456,7 @@ def register_page(request: Request, db: Session = Depends(get_db)):
         request, "register.html",
         context(request, db, error=None, form_csrf=token, email_domain=get_settings().registration_email_domain),
     )
-    response.set_cookie(AUTH_CSRF_COOKIE, token, httponly=True, samesite="strict", secure=get_settings().cookie_secure, max_age=900)
+    _set_auth_csrf_cookies(response, token, max_age=900)
     return response
 
 
@@ -442,7 +469,7 @@ def register(
     form_csrf: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    cookie_token = request.cookies.get(AUTH_CSRF_COOKIE, "")
+    cookie_token = _get_auth_csrf_cookie(request)
     if not cookie_token or not secrets.compare_digest(cookie_token, form_csrf):
         raise HTTPException(403, "Invalid registration form token")
     try:
@@ -470,8 +497,8 @@ def register(
             status_code=400,
         )
     response = RedirectResponse("/", status_code=303)
-    response.set_cookie(COOKIE_NAME, raw_token, httponly=True, samesite="lax", secure=get_settings().cookie_secure, max_age=get_settings().session_ttl_hours * 3600)
-    response.delete_cookie(AUTH_CSRF_COOKIE)
+    _set_session_cookies(response, raw_token, max_age=get_settings().session_ttl_hours * 3600)
+    _delete_auth_csrf_cookies(response)
     return response
 
 
@@ -482,7 +509,7 @@ def login_page(request: Request, next: str = "", db: Session = Depends(get_db)):
     response = templates.TemplateResponse(
         request, "login.html", context(request, db, error=None, form_csrf=token, next_path=next_path)
     )
-    response.set_cookie(AUTH_CSRF_COOKIE, token, httponly=True, samesite="strict", secure=get_settings().cookie_secure, max_age=900)
+    _set_auth_csrf_cookies(response, token, max_age=900)
     return response
 
 
@@ -495,7 +522,7 @@ def login(
     next_path: str = Form("", alias="next"),
     db: Session = Depends(get_db),
 ):
-    cookie_token = request.cookies.get(AUTH_CSRF_COOKIE, "")
+    cookie_token = _get_auth_csrf_cookie(request)
     if not cookie_token or not secrets.compare_digest(cookie_token, form_csrf):
         raise HTTPException(403, "Invalid sign-in form token")
     settings = get_settings()
@@ -539,8 +566,8 @@ def login(
     safe_next = next_path if next_path.startswith("/admin") and not next_path.startswith("//") else ""
     destination = safe_next if user.role == "admin" and safe_next else "/admin" if user.role == "admin" else "/"
     response = RedirectResponse(destination, status_code=303)
-    response.set_cookie(COOKIE_NAME, raw_token, httponly=True, samesite="lax", secure=get_settings().cookie_secure, max_age=get_settings().session_ttl_hours * 3600)
-    response.delete_cookie(AUTH_CSRF_COOKIE)
+    _set_session_cookies(response, raw_token, max_age=get_settings().session_ttl_hours * 3600)
+    _delete_auth_csrf_cookies(response)
     return response
 
 
@@ -551,7 +578,7 @@ def logout(request: Request, csrf_token: str = Form(...), db: Session = Depends(
     session.revoked_at = utcnow()
     db.commit()
     response = RedirectResponse("/", status_code=303)
-    response.delete_cookie(COOKIE_NAME)
+    _delete_session_cookies(response)
     return response
 
 
@@ -563,7 +590,7 @@ def _profile_template_context(request: Request, db: Session, user: User, **value
         user=user,
         email_local=email_local,
         email_domain=email_domain,
-        phone_display="Not collected by SmartReco",
+        phone_display="Not collected by Behavioural Recommendation",
         digest_time_gmt=configured_digest_time_gmt(db),
         **values,
     )
@@ -825,7 +852,10 @@ def ingest_events(payload: EventBatchInput, request: Request, background: Backgr
         accepted += 1
     db.commit()
     if accepted:
-        course_visit = request.headers.get("X-SmartReco-Context") == "course-visit"
+        course_visit = (
+        request.headers.get("X-Behavioural-Recommendation-Context") == "course-visit"
+        or request.headers.get("X-SmartReco-Context") == "course-visit"
+    )
         background.add_task(
             process_activity_and_maybe_recommend,
             user.id,
@@ -1984,7 +2014,7 @@ def admin_model_compare(
                 attempt_number=1,
                 workload="model_lab",
                 langsmith_extra={
-                    "tags": ["smartreco", "mesh", "model-lab", "provider-attempt"],
+                    "tags": ["behavioural_recommendation", "mesh", "model-lab", "provider-attempt"],
                     "metadata": {
                         "telemetry_schema": "provider-attempt-v1",
                         "local_invocation_id": handle.id,

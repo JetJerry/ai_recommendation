@@ -342,7 +342,7 @@
     if (!graph) return;
     const section = document.createElement('section'); section.className = 'graph-insight';
     const heading = document.createElement('div'); heading.className = 'insight-section-heading';
-    const h3 = document.createElement('h3'); h3.textContent = 'SmartReco recommendation flow';
+    const h3 = document.createElement('h3'); h3.textContent = 'Behavioural Recommendation flow';
     const note = document.createElement('small'); note.textContent = 'LangSmith-traced nodes and edges'; heading.append(h3, note); section.append(heading);
     const flow = document.createElement('div'); flow.className = 'graph-flow';
     graph.nodes.forEach((item, index) => {

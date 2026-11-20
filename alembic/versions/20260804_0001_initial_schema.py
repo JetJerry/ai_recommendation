@@ -1,4 +1,4 @@
-"""Create the frozen SmartReco schema at revision 20260804_0001.
+"""Create the frozen Behavioural Recommendation schema at revision 20260804_0001.
 
 This historical migration is intentionally independent of the evolving ORM
 metadata. Revisions 0002 through 0006 add observability, contextual scope,

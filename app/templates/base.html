@@ -3,17 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="SmartReco — personalized course recommendations that adapt to your interests">
+  <meta name="description" content="Behavioural Recommendation — personalized course recommendations that adapt to your interests">
   <link rel="icon" href="{{ url_for('static', path='/favicon.svg') }}" type="image/svg+xml">
   {% if current_session %}<meta name="csrf-token" content="{{ current_session.csrf_token }}">{% endif %}
-  <title>{% block title %}SmartReco{% endblock %}</title>
+  <title>{% block title %}Behavioural Recommendation{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', path='/css/app.css') }}?v=19">
 </head>
 <body data-user-id="{{ current_user.id if current_user else '' }}">
   <header class="site-header">
-    <a class="brand" href="/" aria-label="SmartReco home">
-      <span class="brand-symbol">S</span>
-      <span class="brand-copy"><strong>SmartReco</strong><small>Powered by Mesh API</small></span>
+    <a class="brand" href="/" aria-label="Behavioural Recommendation home">
+      <span class="brand-symbol">B</span>
+      <span class="brand-copy"><strong>Behavioural Recommendation</strong><small>Powered by AI</small></span>
     </a>
     <nav class="main-nav" aria-label="Primary navigation">
       <a href="/">{{ 'User view' if current_user and current_user.role == 'admin' else 'Explore courses' }}</a>
@@ -48,7 +48,7 @@
 
   <footer class="site-footer">
     <div class="shell footer-inner">
-      <div><strong>SmartReco</strong><p>Personalized learning recommendations designed around your interests and goals.</p></div>
+      <div><strong>Behavioural Recommendation</strong><p>Personalized learning recommendations designed around your interests and goals.</p></div>
       <div class="footer-proof"><span>Powered by Mesh API</span><span>Privacy controls</span><span>Curated courses</span></div>
     </div>
   </footer>

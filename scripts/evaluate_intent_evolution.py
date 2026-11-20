@@ -7,12 +7,12 @@ from pathlib import Path
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Demonstrate SmartReco's closed-loop behavioral personalization.")
+    parser = argparse.ArgumentParser(description="Demonstrate Behavioural Recommendation's closed-loop behavioral personalization.")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
     workspace = Path(__file__).resolve().parents[1]
     sys.path.insert(0, str(workspace))
-    temporary = tempfile.TemporaryDirectory(prefix="smartreco-intent-", ignore_cleanup_errors=True)
+    temporary = tempfile.TemporaryDirectory(prefix="behavioural-recommendation-intent-", ignore_cleanup_errors=True)
     temp_root = Path(temporary.name)
     os.environ["DATABASE_URL"] = f"sqlite:///{(temp_root / 'intent.db').as_posix()}"
     os.environ["QDRANT_PATH"] = str(temp_root / "qdrant")
@@ -33,7 +33,7 @@ def main() -> None:
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
-        user = User(email="intent@smartreco.ai", display_name="Intent Evaluation", password_hash=hash_password("IntentPass123!"))
+        user = User(email="intent@behavioural_recommendation.ai", display_name="Intent Evaluation", password_hash=hash_password("IntentPass123!"))
         db.add(user)
         db.flush()
         db.add(UserInterestProfile(user_id=user.id, profile_version=0, journey_stage="exploration"))
@@ -54,7 +54,7 @@ def main() -> None:
     if args.json:
         print(json.dumps(report, indent=2, default=str))
     else:
-        print("SmartReco closed-loop intent evolution")
+        print("Behavioural Recommendation closed-loop intent evolution")
         print(f"Status: {report['status']}")
         if report["status"] == "ok":
             print(f"Stage 1 intent: {report['stage_one_python_interest']['primary_intent']}")

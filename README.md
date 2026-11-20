@@ -64,9 +64,9 @@ The current live-semantic comparison uses the same 50-course catalog, ten predec
 |---|---:|---:|---:|---:|---:|---:|
 | Popularity | 0.1481 | 0.0424 | 0.1633 | 0.9667 | 0.0800 | 0.1000 |
 | Semantic-only (`SEMANTIC`) | 0.8148 | 0.2798 | 0.8038 | 0.6667 | 0.4200 | 0.9467 |
-| SmartReco behavioral/hybrid (`SEMANTIC`) | 0.9630 | 0.3307 | 0.9739 | 0.6667 | 0.4200 | 0.9444 |
+| Behavioural Recommendation behavioral/hybrid (`SEMANTIC`) | 0.9630 | 0.3307 | 0.9739 | 0.6667 | 0.4200 | 0.9444 |
 
-In this measured real-semantic run, SmartReco improved NDCG@3 by **21.16%** over Semantic-only and **496.39%** over Popularity. Exclusion correctness and catalog-ID grounding were 100%; no hallucinated product ID was observed. Semantic-only and SmartReco each made ten Mesh embedding calls and zero recommendation-copy LLM calls. The older deterministic/hash results remain separately labeled `DEGRADED` in [docs/evaluation-results.md](docs/evaluation-results.md).
+In this measured real-semantic run, Behavioural Recommendation improved NDCG@3 by **21.16%** over Semantic-only and **496.39%** over Popularity. Exclusion correctness and catalog-ID grounding were 100%; no hallucinated product ID was observed. Semantic-only and Behavioural Recommendation each made ten Mesh embedding calls and zero recommendation-copy LLM calls. The older deterministic/hash results remain separately labeled `DEGRADED` in [docs/evaluation-results.md](docs/evaluation-results.md).
 
 ## AI efficiency
 
@@ -79,7 +79,7 @@ The isolated live-Mesh benchmark measured the existing production gates rather t
                    -> 1 confirmed contextual cache hit
 ```
 
-The naive comparison is one LLM call per raw event. SmartReco made 2 measured Mesh recommendation-copy calls, a **98.0% call reduction**. Median batched-ingestion time was approximately 40 ms in that run; hybrid retrieval/ranking averaged approximately 14.5 ms. External Mesh latency was reported separately (approximately 8.6 seconds mean) and is not disguised as internal application latency. Timings are informational and machine/provider dependent.
+The naive comparison is one LLM call per raw event. Behavioural Recommendation made 2 measured Mesh recommendation-copy calls, a **98.0% call reduction**. Median batched-ingestion time was approximately 40 ms in that run; hybrid retrieval/ranking averaged approximately 14.5 ms. External Mesh latency was reported separately (approximately 8.6 seconds mean) and is not disguised as internal application latency. Timings are informational and machine/provider dependent.
 
 ## Recommendation safety
 
@@ -126,7 +126,7 @@ Digest delivery defaults to a local sandbox: it records a realistic provider rec
 
 ### SMTP digest setup
 
-For an approved SMTP sandbox such as Mailtrap, copy the provider credentials into the local `.env` file (never commit them), set the public application address used by course links, and restart SmartReco:
+For an approved SMTP sandbox such as Mailtrap, copy the provider credentials into the local `.env` file (never commit them), set the public application address used by course links, and restart Behavioural Recommendation:
 
 ```env
 DELIVERY_MODE=smtp
@@ -140,7 +140,7 @@ APP_PUBLIC_URL=http://127.0.0.1:8000
 
 The SMTP client requires verified STARTTLS before authentication or sending; certificate or hostname verification failures follow the normal delivery retry/failure path and never fall back to plaintext. The resulting multipart digest includes the personalized recommendation narrative, a tailored explanation and direct link for every selected course, plus an accessible plain-text version. Learners must enable digest delivery and provide a digest address in `/account`; the dispatcher rechecks consent, address, catalog activity, expiry and product version immediately before provider contact.
 
-The full setup, delivery lifecycle and architecture diagram are included in [the technical handover handbook](docs/SmartReco_End_to_End_Technical_Handover_Handbook.pdf).
+The full setup, delivery lifecycle and architecture diagram are included in [the technical handover handbook](docs/Behavioural_Recommendation_End_to_End_Technical_Handover_Handbook.pdf).
 
 ## Mesh API
 

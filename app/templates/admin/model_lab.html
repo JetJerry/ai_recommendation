@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Model lab — SmartReco{% endblock %}
+{% block title %}Model lab — Behavioural Recommendation{% endblock %}
 {% block content %}
 <section class="shell admin-page">
   <div class="section-heading"><div><span class="eyebrow">Controlled Mesh evaluation</span><h1>Compare models on identical evidence</h1><p>Choose a learner and one or more models. The free model is selected by default; paid tiers run only when you explicitly select them.</p></div><span class="status {{ 'good' if mesh_enabled else 'bad' }}">{{ 'Mesh ready' if mesh_enabled else 'MESH_API_KEY required' }}</span></div>

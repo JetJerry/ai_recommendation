@@ -182,7 +182,7 @@ def test_smtp_uses_only_profile_digest_email(db, user, products, active_recommen
     assert f"Hi {user.display_name}" in plain_body
     assert course_url in plain_body
     assert "Why it fits:" in plain_body
-    assert "SmartReco daily digest" in html_body
+    assert "Behavioural Recommendation daily digest" in html_body
     assert course_url in html_body
     assert "Why this fits your journey:" in html_body
     assert f"Prepared for {user.display_name}" in html_body

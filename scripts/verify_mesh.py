@@ -1,4 +1,4 @@
-"""Verify the configured Mesh model through SmartReco's real output schema."""
+"""Verify the configured Mesh/Groq model through Behavioural Recommendation's real output schema."""
 
 from pathlib import Path
 import sys

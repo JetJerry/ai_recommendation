@@ -44,7 +44,7 @@ def main() -> None:
             attempt_number=1,
             workload="verification",
             langsmith_extra={
-                "tags": ["smartreco", "synthetic-qa", "provider-attempt"],
+                "tags": ["behavioural_recommendation", "synthetic-qa", "provider-attempt"],
                 "metadata": {
                     "telemetry_schema": "provider-attempt-v1",
                     "local_invocation_id": handle.id,

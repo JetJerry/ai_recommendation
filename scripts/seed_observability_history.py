@@ -28,7 +28,7 @@ def seed() -> int:
         if already_seeded:
             return 0
 
-        learner = db.scalar(select(User).where(User.email == "learner@smartreco.local"))
+        learner = db.scalar(select(User).where(User.email == "learner@behavioural_recommendation.local")) or db.scalar(select(User).where(User.email == "learner@smartreco.local"))
         if learner is None:
             raise RuntimeError("Seed the demo learner before observability history.")
 

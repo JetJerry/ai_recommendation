@@ -219,7 +219,7 @@ def _send_smtp(delivery: Delivery, user: User, recommendation: Recommendation) -
     <tr><td align="center">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;">
         <tr><td style="padding:28px 30px;border-radius:18px 18px 0 0;background:#4f46d9;color:#ffffff;">
-          <div style="font-size:13px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;opacity:.9;">SmartReco daily digest</div>
+          <div style="font-size:13px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;opacity:.9;">Behavioural Recommendation daily digest</div>
           <h1 style="margin:12px 0 8px;font-size:30px;line-height:38px;color:#ffffff;">{escape(recommendation.headline)}</h1>
           <p style="margin:0;font-size:15px;line-height:23px;color:#f4f1ff;">Prepared for {learner_name}, based on your evolving learning interests.</p>
         </td></tr>

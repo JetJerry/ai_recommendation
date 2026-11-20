@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from openai import APIConnectionError, APITimeoutError, OpenAI
 from pydantic import ValidationError
 
-from app.config import get_settings
+from app.config import Settings, get_settings
 from app.schemas import RecommendationCopy
 from app.services.observability import begin_invocation, finish_invocation
 
@@ -16,6 +16,19 @@ from app.services.observability import begin_invocation, finish_invocation
 EMBEDDING_DIMENSION = 1536
 _EMAIL_ADDRESS = re.compile(r"(?<![\w.+-])[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}(?![\w.-])", re.I)
 _PHONE_CANDIDATE = re.compile(r"(?<!\w)\+?\d[\d\s().-]{5,}\d(?!\w)")
+
+_fastembed_instance = None
+_fastembed_lock = Lock()
+
+
+def get_fastembed_model(model_name: str = "BAAI/bge-small-en-v1.5"):
+    global _fastembed_instance
+    with _fastembed_lock:
+        if _fastembed_instance is None:
+            from fastembed import TextEmbedding
+
+            _fastembed_instance = TextEmbedding(model_name)
+        return _fastembed_instance
 
 
 @dataclass
@@ -115,23 +128,59 @@ def safe_untrusted_text(value: object, limit: int) -> str:
 
 class MeshGateway:
     def __init__(self) -> None:
-        self.settings = get_settings()
-        self.client = (
-            OpenAI(
-                api_key=self.settings.mesh_api_key,
-                base_url=self.settings.mesh_base_url,
-                timeout=self.settings.mesh_timeout_seconds,
-                max_retries=self.settings.mesh_sdk_max_retries,
-            )
-            if self.settings.mesh_api_key
-            else None
-        )
+        self._settings = None
+        self._client_cache: dict[str, OpenAI] = {}
         self._counter_lock = Lock()
         self._counters = {
             "mesh_embedding_calls": 0,
             "deterministic_embedding_calls": 0,
             "mesh_copy_llm_calls": 0,
         }
+
+    def _client_for_model(self, model: str | None = None) -> OpenAI | None:
+        settings = self.settings
+        is_groq_model = bool(model and any(model.startswith(p) for p in ("qwen/", "llama", "groq/")))
+        if (is_groq_model or ("groq.com" in settings.mesh_base_url)) and settings.groq_api_key:
+            cache_key = f"groq:{settings.groq_api_key}"
+            if cache_key not in self._client_cache:
+                self._client_cache[cache_key] = OpenAI(
+                    api_key=settings.groq_api_key,
+                    base_url="https://api.groq.com/openai/v1",
+                    timeout=settings.mesh_timeout_seconds,
+                    max_retries=settings.mesh_sdk_max_retries,
+                )
+            return self._client_cache[cache_key]
+        api_key = settings.mesh_api_key or settings.effective_llm_api_key
+        if not api_key:
+            return None
+        base_url = settings.mesh_base_url
+        if api_key.startswith("gsk_") and "meshapi.ai" in base_url:
+            base_url = "https://api.groq.com/openai/v1"
+        cache_key = f"mesh:{api_key}:{base_url}"
+        if cache_key not in self._client_cache:
+            self._client_cache[cache_key] = OpenAI(
+                api_key=api_key,
+                base_url=base_url,
+                timeout=settings.mesh_timeout_seconds,
+                max_retries=settings.mesh_sdk_max_retries,
+            )
+        return self._client_cache[cache_key]
+
+    @property
+    def client(self) -> OpenAI | None:
+        return self._client_for_model()
+
+    @client.setter
+    def client(self, value: OpenAI | None) -> None:
+        pass
+
+    @property
+    def settings(self) -> Settings:
+        return self._settings if self._settings is not None else get_settings()
+
+    @settings.setter
+    def settings(self, value: Settings) -> None:
+        self._settings = value
 
     def counter_snapshot(self) -> dict[str, int]:
         with self._counter_lock:
@@ -147,9 +196,40 @@ class MeshGateway:
 
     @property
     def embeddings_enabled(self) -> bool:
+        if self.settings.embedding_provider == "fastembed":
+            return True
         return self.client is not None and self.settings.mesh_embeddings_enabled
 
     def embed(self, texts: list[str]) -> list[list[float]]:
+        if self.settings.embedding_provider == "fastembed":
+            model_name = self.settings.open_embedding_model
+            handle = begin_invocation(
+                "embedding",
+                "fastembed_semantic_embedding",
+                model=model_name,
+                metadata={"text_count": len(texts), "semantic_status": "SEMANTIC"},
+            )
+            self._increment("mesh_embedding_calls")
+            try:
+                prepared_texts = [safe_untrusted_text(text, 10_000) for text in texts]
+                embed_model = get_fastembed_model(model_name)
+                raw_vectors = list(embed_model.embed(prepared_texts))
+                vectors = []
+                for v in raw_vectors:
+                    v_list = [float(x) for x in v]
+                    padded = v_list + [0.0] * (EMBEDDING_DIMENSION - len(v_list))
+                    norm = math.sqrt(sum(x * x for x in padded)) or 1.0
+                    vectors.append([x / norm for x in padded])
+                finish_invocation(
+                    handle,
+                    input_tokens=sum(len(t.split()) for t in prepared_texts),
+                    metadata={"vector_count": len(vectors), "vector_dimension": EMBEDDING_DIMENSION},
+                )
+                return vectors
+            except Exception as exc:
+                finish_invocation(handle, status="failed", error=exc)
+                raise
+
         semantic = self.embeddings_enabled
         model = self.settings.mesh_embedding_model if semantic else "deterministic-hash-v1"
         operation = "mesh_semantic_embedding" if semantic else "deterministic_hash_embedding"
@@ -166,7 +246,10 @@ class MeshGateway:
                 vectors = [deterministic_embedding(text) for text in prepared_texts]
                 finish_invocation(handle, metadata={"vector_count": len(vectors), "vector_dimension": EMBEDDING_DIMENSION})
                 return vectors
-            response = self.client.embeddings.create(model=self.settings.mesh_embedding_model, input=prepared_texts)
+            client = self._client_for_model(self.settings.mesh_embedding_model) or self.client
+            if not client:
+                raise RuntimeError("No configured embedding client available.")
+            response = client.embeddings.create(model=self.settings.mesh_embedding_model, input=prepared_texts)
             vectors = [item.embedding for item in sorted(response.data, key=lambda item: item.index)]
             usage = getattr(response, "usage", None)
             input_tokens = int(getattr(usage, "prompt_tokens", 0) or getattr(usage, "total_tokens", 0) or 0)
@@ -282,13 +365,16 @@ class MeshGateway:
                 "Return the JSON object only, without markdown.",
             ],
         }
-        response = self.client.chat.completions.create(
+        client = self._client_for_model(selected_model) or self.client
+        if not client:
+            raise RuntimeError(f"No configured LLM API client available for model {selected_model}")
+        response = client.chat.completions.create(
             model=selected_model,
             temperature=0,
             # The grounded schema is bounded to a short narrative plus at most
             # five concise reasons. Some free Mesh models reject a 4,000-token
             # completion allowance even though the actual response is much smaller.
-            max_tokens=700 if concise else 1200,
+            max_tokens=1500 if concise else 2500,
             timeout=self.settings.mesh_contextual_timeout_seconds if concise else self.settings.mesh_timeout_seconds,
             messages=[
                 {

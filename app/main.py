@@ -28,7 +28,7 @@ def bootstrap_admin() -> None:
             db.add(
                 User(
                     email=settings.demo_admin_email.lower(),
-                    display_name="SmartReco Admin",
+                    display_name="Behavioural Recommendation Admin",
                     password_hash=hash_password(settings.demo_admin_password),
                     role="admin",
                 )
@@ -56,7 +56,7 @@ async def lifespan(_app: FastAPI):
     stop_scheduler()
 
 
-app = FastAPI(title="SmartReco", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Behavioural Recommendation", version="0.1.0", lifespan=lifespan)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=get_settings().allowed_host_list)
 
 
@@ -82,7 +82,7 @@ async def security_headers(request: Request, call_next):
         "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; "
         "connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
     )
-    if request.cookies.get("smartreco_session") and response.headers.get("content-type", "").startswith("text/html"):
+    if (request.cookies.get("behavioural_recommendation_session") or request.cookies.get("smartreco_session")) and response.headers.get("content-type", "").startswith("text/html"):
         response.headers["Cache-Control"] = "no-store, private"
     if get_settings().cookie_secure:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"

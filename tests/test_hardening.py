@@ -374,7 +374,7 @@ def _login(client, user):
     client.get("/login")
     client.post(
         "/login",
-        data={"email": user.email, "password": "VeryStrong123!", "form_csrf": client.cookies.get("smartreco_auth_csrf")},
+        data={"email": user.email, "password": "VeryStrong123!", "form_csrf": client.cookies.get("behavioural_recommendation_auth_csrf") or client.cookies.get("smartreco_auth_csrf")},
         follow_redirects=False,
     )
 
@@ -659,7 +659,7 @@ def test_offline_evaluation_is_reproducible_and_never_calls_mesh(db, products):
     assert first["summary"]["hallucinated_product_id_rate"] == 0
     assert first["summary"]["journey_count"] == 10
     assert first["summary"]["mean_precision_at_k"] == second["summary"]["mean_precision_at_k"]
-    assert [row["system"] for row in first["comparison"]] == ["Popularity", "Semantic-only", "SmartReco hybrid"]
+    assert [row["system"] for row in first["comparison"]] == ["Popularity", "Semantic-only", "Behavioural Recommendation hybrid"]
     assert all(row["exclusion_pass_rate"] == 1.0 for row in first["comparison"])
     assert all(row["hallucinated_product_id_rate"] == 0 for row in first["comparison"])
 

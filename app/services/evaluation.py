@@ -235,21 +235,22 @@ def evaluate_recommendations(k: int = 3, *, semantic: bool = False) -> dict:
             "Semantic-only", journeys, products, category_totals, active_ids, k,
             lambda profile, limit: semantic_only_baseline(products, profile, limit, semantic=semantic),
         ),
-        "smartreco": _evaluate_system(
-            "SmartReco hybrid", journeys, products, category_totals, active_ids, k,
+        "behavioural_recommendation": _evaluate_system(
+            "Behavioural Recommendation hybrid", journeys, products, category_totals, active_ids, k,
             lambda profile, limit: retrieve_and_rank(profile, limit=limit),
         ),
     }
-    summary = systems["smartreco"]["summary"]
+    systems["smartreco"] = systems["behavioural_recommendation"]
+    summary = systems["behavioural_recommendation"]["summary"]
     summary.update({
         "fallback_rate": round(
-            sum(row["semantic_status"] != SEMANTIC for row in systems["smartreco"]["journeys"]) / len(journeys), 4
+            sum(row["semantic_status"] != SEMANTIC for row in systems["behavioural_recommendation"]["journeys"]) / len(journeys), 4
         ),
         "mesh_calls": summary["mesh_embedding_calls"],
         "mesh_generation_invoked": False,
         "estimated_ai_cost": None if semantic else 0.0,
     })
-    comparison = [systems[key]["summary"] for key in ("popularity", "semantic_only", "smartreco")]
+    comparison = [systems[key]["summary"] for key in ("popularity", "semantic_only", "behavioural_recommendation")]
     improvement = {
         "ndcg_vs_popularity_percent": _percent_change(
             summary["mean_ndcg_at_3"], systems["popularity"]["summary"]["mean_ndcg_at_3"]
@@ -264,7 +265,7 @@ def evaluate_recommendations(k: int = 3, *, semantic: bool = False) -> dict:
         "semantic_status": summary["semantic_status"],
         "mesh_generation_invoked": False,
         "metric_definition": "A result is relevant when its authoritative catalog category is in the journey's predeclared relevant-category set.",
-        "journeys": systems["smartreco"]["journeys"],
+        "journeys": systems["behavioural_recommendation"]["journeys"],
         "summary": summary,
         "systems": systems,
         "comparison": comparison,

@@ -10,7 +10,7 @@ from app.services.vector_store import get_vector_store
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run SmartReco's offline or opt-in live semantic ranking evaluation.")
+    parser = argparse.ArgumentParser(description="Run Behavioural Recommendation's offline or opt-in live semantic ranking evaluation.")
     parser.add_argument("--json", action="store_true", help="Print the complete machine-readable report")
     parser.add_argument("--semantic", action="store_true", help="Require real Mesh embeddings and a verified semantic Qdrant index")
     args = parser.parse_args()
@@ -20,12 +20,12 @@ def main() -> None:
         get_vector_store().client.close()
         return
     if report["status"] != "ok":
-        print(f"SmartReco evaluation not run: {report.get('reason', 'Seed the active catalog first.')}")
+        print(f"Behavioural Recommendation evaluation not run: {report.get('reason', 'Seed the active catalog first.')}")
         print(f"Semantic status: {report.get('semantic_status', 'UNAVAILABLE')}")
         get_vector_store().client.close()
         raise SystemExit(2)
     summary = report["summary"]
-    print(f"SmartReco {report['evaluation_mode'].replace('_', ' ')} recommendation evaluation")
+    print(f"Behavioural Recommendation {report['evaluation_mode'].replace('_', ' ')} recommendation evaluation")
     print(f"Semantic status: {report['semantic_status']}")
     print(f"Journeys: {summary['journey_count']}")
     print("\nSystem comparison (same catalog, journeys, labels, exclusions, and K=3)")
